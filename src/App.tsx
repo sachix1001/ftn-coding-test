@@ -25,6 +25,8 @@ function App() {
   );
   const [time, setTime] = React.useState<number>(0);
   const [input, setInput] = React.useState<number | undefined>();
+  // array of first 1000 fibonacci numbers
+  const fibonacci1000 = fibonacci(1000);
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput((value) =>
@@ -85,5 +87,14 @@ function App() {
     </div>
   );
 }
+
+// return 'num' number of fibonacci sequence array
+const fibonacci = (num: number): number[] => {
+  const sequence = [0, 1];
+  for (let i = 2; i <= num; i++) {
+    sequence[i] = sequence[i - 2] + sequence[i - 1];
+  }
+  return sequence;
+};
 
 export default App;
