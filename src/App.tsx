@@ -1,15 +1,18 @@
-import React from "react";
+import React, { useEffect } from "react";
 // import styled from "styled-components";
 import "./App.css";
 
-const DisplayText: { [key: string]: string } = {
+const Question: { [key: string]: string } = {
   setTime:
     "Please input the amount of time in seconds between emitting numbers and their frequency",
   firstNumber: "Please enter the first number",
   nextNumber: "Please enter the next number",
+  quit: "Thanks for playing.",
+};
+
+const timerState: { [key: string]: string } = {
   halt: "Timer halted",
   resume: "Timer resumed",
-  quit: "Thanks for playing, press any key to exit.",
 };
 
 interface Frequency {
@@ -17,16 +20,28 @@ interface Frequency {
 }
 
 function App() {
-  const [textKey, setTextKey] = React.useState<keyof typeof DisplayText>(
+  const [questionKey, setQuestionKey] = React.useState<keyof typeof Question>(
     "setTime"
   );
-  const [frequency, setFrequency] = React.useState<Frequency | undefined>(
-    undefined
-  );
+  const [text, setText] = React.useState<string>("");
+  const [numbers, setNumbers] = React.useState<Frequency | "">("");
   const [time, setTime] = React.useState<number>(0);
-  const [input, setInput] = React.useState<number | undefined>();
-  // array of first 1000 fibonacci numbers
-  const fibonacci1000 = fibonacci(1000);
+  const [input, setInput] = React.useState<number | "">("");
+  const [timerPause, setTimerPause] = React.useState<boolean>(true);
+
+  useEffect(() => {
+    if (timerPause) return;
+    const interval = setInterval(() => {
+      if (!numbers) return;
+      setText(JSON.stringify(sortNumbers()));
+    }, time * 1000);
+
+    return () => clearInterval(interval);
+  }, [time, timerPause, numbers]);
+
+  const sortNumbers = () => {
+    return Object.entries(numbers).sort((a, b) => b[1] - a[1]);
+  };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput((value) =>
@@ -35,50 +50,74 @@ function App() {
   };
 
   const handleEnter = (e: React.MouseEvent<HTMLElement>) => {
-    switch (textKey) {
+    switch (questionKey) {
       // set printing frequency
       case "setTime":
-        if (input) setTime(input);
-        setTextKey("firstNumber");
-        setInput(undefined);
+        if (!input) break;
+        setTime(input);
+        setTimerPause(false);
+        setQuestionKey("firstNumber");
+        setInput("");
         break;
 
       // update input number to frequency dictionary
       case "firstNumber":
-        if (input) setFrequency({ input: 1 });
-        setTextKey("nextNumber");
-        setInput(undefined);
+        if (!input) break;
+        setNumbers({ [input]: 1 });
+        checkFibonacci();
+        setQuestionKey("nextNumber");
+        setInput("");
         break;
 
       // update input number to frequency dictionary
       // copy frequency obj to trigger state update
       case "nextNumber":
-        if (input && frequency) {
-          const incrementedFrequency = { ...frequency };
-          incrementedFrequency[input] = (incrementedFrequency[input] + 1) | 1;
-          setFrequency(incrementedFrequency);
+        if (!input) break;
+        if (!numbers) {
+          setNumbers({ [input]: 1 });
+        } else {
+          const incrementedFrequency = { ...numbers };
+          incrementedFrequency[input] = incrementedFrequency[input] + 1 || 1;
+          setNumbers(incrementedFrequency);
         }
-        setInput(undefined);
+        checkFibonacci();
+        setInput("");
         break;
     }
   };
 
   const handleHalt = () => {
-    setTextKey("halt");
+    setText(timerState.halt);
+    setTimerPause(true);
   };
   const handleResume = () => {
-    setTextKey("resume");
+    setText(timerState.resume);
+    setTimerPause(false);
   };
   const handleQuite = () => {
-    setTextKey("quit");
+    setQuestionKey("quit");
+    setTimerPause(true);
+    setText(JSON.stringify(sortNumbers()));
+  };
+
+  // array of first 1000 fibonacci numbers
+  const fibonacci1000 = fibonacci(1000);
+  const checkFibonacci = () => {
+    if (!input) return;
+    if (fibonacci1000.includes(input)) setText("FIB");
   };
 
   return (
     <div className="App">
       <header className="App-header">
-        <h5>{DisplayText[textKey]}</h5>
-        <h5>{JSON.stringify(frequency)}</h5>
-        <input onChange={handleInput} type="text" pattern="[0-9]*"></input>
+        <h5>{Question[questionKey]}</h5>
+        <h5>{text}</h5>
+        <input
+          onChange={handleInput}
+          value={input}
+          type="text"
+          pattern="[0-9]*"
+        ></input>
         <button onClick={handleEnter}>Enter</button>
         <button onClick={handleHalt}>Halt</button>
         <button onClick={handleResume}>Resume</button>
